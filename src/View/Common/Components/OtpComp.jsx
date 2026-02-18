@@ -1,10 +1,11 @@
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-
+import useAuthStore from "../../../stores/authStore";
 const OtpComp = ({ email }) => {
   const [otp, setOtp] = useState(new Array(6).fill(""));
-  const [error, setError] = useState("");
+  const [errors, setError] = useState("");
   const inputsRef = useRef([]);
+  const { verifyOtp, isLoading, error, tempEmail, setStep, clearError } = useAuthStore();
 
   const handleChange = (value, index) => {
     if (!/^\d?$/.test(value)) return;
@@ -24,7 +25,7 @@ const OtpComp = ({ email }) => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async() => {
     if (otp.includes("")) {
       setError("Please enter the complete OTP");
       return;
@@ -32,7 +33,14 @@ const OtpComp = ({ email }) => {
 
     setError("");
     const enteredOtp = otp.join("");
-    console.log("OTP Entered:", enteredOtp);
+    const result = await verifyOtp(enteredOtp);
+    if (result.success) {
+      console.log("Verified! Redirecting...");
+    }
+  };
+  const handleBack = () => {
+    clearError();
+    setStep('login');
   };
 
   const resendOtp = () => {
@@ -67,16 +75,23 @@ const OtpComp = ({ email }) => {
       </div>
 
       {/* Error */}
-      {error && (
-        <p className="text-sm text-red-500 mt-4">{error}</p>
+      {errors && (
+        <p className="text-sm text-red-500 mt-4">{errors}</p>
       )}
 
       {/* Verify Button */}
       <Button
         onClick={handleSubmit}
+        disabled={isLoading || otp.length !== 6}
         className="w-full mt-6 bg-white text-black hover:bg-zinc-200"
       >
-        Verify OTP
+        {isLoading ? "Verifying..." : "Verify Account"}
+      </Button>
+      <Button 
+        onClick={handleBack}
+        className="w-full mt-4 text-sm text-zinc-500 hover:text-white transition-colors"
+      >
+        ← Back to Login
       </Button>
 
       {/* Resend */}
