@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-
+import useAuthStore from "@/stores/authStore";
 const ProfileDetails = () => {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -14,6 +14,7 @@ const ProfileDetails = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const { updateProfile, isLoading, error: apiError } = useAuthStore();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,7 +23,8 @@ const ProfileDetails = () => {
 
   const validate = () => {
     const newErrors = {};
-
+    const generalRegex = /^[A-Za-z][A-Za-z\s'-]{1,49}$/;
+    const phoneRegex = /^(\+91|91)?[6-9]\d{9}$/;
     if (!formData.firstName || formData.firstName.length < 2) {
       newErrors.firstName = "First name must be at least 2 characters";
     }
@@ -31,9 +33,9 @@ const ProfileDetails = () => {
       newErrors.lastName = "Last name must be at least 2 characters";
     }
 
-    if (!/^\d{10}$/.test(formData.phone)) {
-      newErrors.phone = "Enter a valid 10-digit phone number";
-    }
+    if (!generalRegex.test(formData.firstName)) newErrors.firstName = "Invalid first name";
+    if (!generalRegex.test(formData.lastName)) newErrors.lastName = "Invalid last name";
+    if (!phoneRegex.test(formData.phone)) newErrors.phone = "Enter a valid 10-digit phone number";
 
     if (!formData.address) {
       newErrors.address = "Address is required";
@@ -51,10 +53,13 @@ const ProfileDetails = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async(e) => {
     e.preventDefault();
     if (!validate()) return;
-    console.log("Profile Details:", formData);
+    const result = await updateProfile(formData);
+    if (result.success) {
+      console.log("Profile updated successfully!");
+    }
   };
 
   return (
@@ -64,7 +69,11 @@ const ProfileDetails = () => {
       </h2>
 
       <form onSubmit={onSubmit} className="space-y-5">
-        {/* First Name */}
+        {apiError && (
+          <p className="text-center text-sm text-red-500 bg-red-500/10 py-2 rounded border border-red-500/20">
+            {apiError}
+          </p>
+        )}
         <div className="space-y-1">
           <Label className="text-zinc-300">First Name</Label>
           <Input
@@ -155,10 +164,10 @@ const ProfileDetails = () => {
         </div>
 
         <Button
-          type="submit"
+          type="submit" disabled={isLoading}
           className="w-full bg-white text-black hover:bg-zinc-200"
         >
-          Save Profile
+          {isLoading ? "Saving..." : "Save and Continue"}
         </Button>
       </form>
     </div>

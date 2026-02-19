@@ -32,9 +32,6 @@ const ProfileDetails = () => {
       newErrors.lastName = "Last name must be at least 2 characters";
     }
 
-    if (!/^\d{10}$/.test(formData.phone)) {
-      newErrors.phone = "Enter a valid 10-digit phone number";
-    }
     if (!generalRegex.test(formData.firstName)) newErrors.firstName = "Invalid first name";
     if (!generalRegex.test(formData.lastName)) newErrors.lastName = "Invalid last name";
     if (!phoneRegex.test(formData.phone)) newErrors.phone = "Enter a valid 10-digit phone number";

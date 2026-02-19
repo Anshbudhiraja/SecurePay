@@ -93,7 +93,7 @@ const useAuthStore = create((set,get) => ({
         isLoading: false 
       });
     } catch (err) {
-      if (err.response?.status === 404) {
+      if (err.response?.status === 404 || err.response?.status === 400) {
       set({ isProfileComplete: false, isLoading: false });
     } else {
       set({ isLoading: false });

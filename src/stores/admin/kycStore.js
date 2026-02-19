@@ -28,7 +28,7 @@ const useKycStore = create((set) => ({
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       
-      set({ kycData: response.data.result, isLoading: false });
+      set({ kycData: response.data.data, isLoading: false });
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.message || "Submission failed";
