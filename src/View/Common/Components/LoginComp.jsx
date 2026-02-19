@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import useAuthStore from "../../../stores/authStore";
+import toast from "react-hot-toast";
 
 const LoginComp = () => {
   const [formData, setFormData] = useState({
@@ -38,10 +39,14 @@ const LoginComp = () => {
   
   if (result.success) {
     if (result.type === 'DONE') {
+      toast.success("Welcome back!");
       console.log("Redirecting...");
     } else if (result.type === 'OTP_SENT') {
+      toast.success("OTP sent to your email");
       console.log("Please check your email for OTP");
     }
+  } else {
+    toast.error(result.error);
   }
 };
 

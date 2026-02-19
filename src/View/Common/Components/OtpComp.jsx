@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import useAuthStore from "../../../stores/authStore";
+import toast from "react-hot-toast";
 const OtpComp = ({ email }) => {
   const [otp, setOtp] = useState(new Array(6).fill(""));
   const [errors, setError] = useState("");
@@ -27,6 +28,7 @@ const OtpComp = ({ email }) => {
 
   const handleSubmit = async() => {
     if (otp.includes("")) {
+      toast.error("Please enter the complete OTP")
       setError("Please enter the complete OTP");
       return;
     }

@@ -3,6 +3,7 @@ import LoginComp from "../Components/LoginComp";
 import OtpComp from "../Components/OtpComp";
 import useAuthStore from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const Login = () => {
   const { step, tempEmail,token, role } = useAuthStore();

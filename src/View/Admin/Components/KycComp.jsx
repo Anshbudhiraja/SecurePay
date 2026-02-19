@@ -1,28 +1,32 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   CheckCircleIcon,
   ClockIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
-
+import toast from 'react-hot-toast';
+import useKycStore from "@/stores/admin/kycStore";
 const KycComp = () => {
-  const [kycData, setKycData] = useState(null);
+  const { kycData, isLoading, error, fetchKycStatus, submitKyc } = useKycStore();
   const [video, setVideo] = useState(null);
   const [document, setDocument] = useState(null);
-
-  const handleSubmit = () => {
+  useEffect(() => {
+    fetchKycStatus();
+  }, [fetchKycStatus]);
+  const handleSubmit = async() => {
     if (!video || !document) {
-      alert("Please upload both video and document");
+     toast.error("Please upload both video and document");
       return;
     }
 
-    // Mock submission (replace with API later)
-    setKycData({
-      videoName: video.name,
-      documentName: document.name,
-      status: "pending", // pending | approved | rejected
-      submittedAt: new Date().toLocaleString(),
-    });
+    toast.promise(submitKyc(video, document), {
+    loading: 'Uploading KYC files...',
+    success: (result) => {
+      if (result.success) return 'KYC Submitted successfully!';
+      throw new Error(result.error); // Fallback to error state if logic fails
+    },
+    error: (err) => `Error: ${err.message || "Upload failed"}`,
+  });
   };
 
   const renderStatus = (status) => {
@@ -50,7 +54,7 @@ const KycComp = () => {
         );
     }
   };
-
+  if (isLoading) return <div className="text-center text-gray-400">Loading KYC info...</div>;
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
@@ -60,84 +64,52 @@ const KycComp = () => {
           Complete your KYC to unlock all features
         </p>
       </div>
-
+    {error && <p className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 rounded-lg">{error}</p>}
       {/* If KYC already submitted */}
       {kycData ? (
+        /* Status View */
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-4">Submitted KYC Details</h2>
-
           <div className="space-y-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Video File</span>
-              <span>{kycData.videoName}</span>
+            <div className="flex justify-between border-b border-gray-800 pb-2">
+              <span className="text-gray-400">Video Evidence</span>
+              <a href={kycData.video} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">View Video</a>
             </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Document File</span>
-              <span>{kycData.documentName}</span>
+            <div className="flex justify-between border-b border-gray-800 pb-2">
+              <span className="text-gray-400">ID Document</span>
+              <a href={kycData.pdf} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">View PDF</a>
             </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Submitted On</span>
-              <span>{kycData.submittedAt}</span>
-            </div>
-
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Status</span>
+              <span className="text-gray-400">Current Status</span>
               {renderStatus(kycData.status)}
             </div>
           </div>
-
-          <div className="mt-6 text-sm text-gray-400">
-            🔒 KYC can only be submitted once. Please wait for verification.
-          </div>
         </div>
       ) : (
-        /* KYC Submission Form */
+        /* Submission Form */
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-6">Submit Your KYC</h2>
-
           <div className="space-y-6">
-            {/* Video Upload */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2">
-                Upload Recorded Video
-              </label>
-              <input
-                type="file"
-                accept="video/*"
-                onChange={(e) => setVideo(e.target.files[0])}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm"
-              />
+              <label className="block text-sm text-gray-400 mb-2">Upload Recorded Video</label>
+              <input type="file" accept="video/*" onChange={(e) => setVideo(e.target.files[0])}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300" />
             </div>
-
-            {/* Document Upload */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2">
-                Upload Identity Document (PDF)
-              </label>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setDocument(e.target.files[0])}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm"
-              />
+              <label className="block text-sm text-gray-400 mb-2">Upload Identity Document (PDF)</label>
+              <input type="file" accept="application/pdf" onChange={(e) => setDocument(e.target.files[0])}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300" />
             </div>
-
-            {/* Submit */}
             <div className="flex justify-end">
-              <button
-                onClick={handleSubmit}
-                className="bg-green-600 hover:bg-green-500 transition px-6 py-2 rounded-lg font-medium"
-              >
-                Submit KYC
+              <button onClick={handleSubmit} disabled={isLoading}
+                className="bg-green-600 hover:bg-green-500 disabled:bg-gray-600 transition px-6 py-2 rounded-lg font-medium">
+                {isLoading ? "Uploading..." : "Submit KYC"}
               </button>
             </div>
-          </div>
-
-          <p className="text-xs text-gray-400 mt-4">
+            <p className="text-xs text-gray-400 mt-4">
             ⚠️ KYC can be submitted only once. Please ensure files are correct.
           </p>
+          </div>
         </div>
       )}
     </div>

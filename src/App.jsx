@@ -19,10 +19,11 @@ import KycVerification from './View/Superadmin/Pages/KycVerification'
 import SuperadminProfile from './View/Superadmin/Pages/SuperadminProfile'
 import Analytics from './View/Superadmin/Pages/Analytics'
 import Chat from './View/Admin/Pages/Chat'
-
+import { Toaster } from 'react-hot-toast';
 const App = () => {
   return (
     <div>
+      <Toaster position="top-right" reverseOrder={false} />
       <BrowserRouter>
       <Routes>
         <Route path='/' element={<Login/>}></Route>
