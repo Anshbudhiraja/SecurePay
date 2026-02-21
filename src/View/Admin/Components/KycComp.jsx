@@ -23,7 +23,7 @@ const KycComp = () => {
     loading: 'Uploading KYC files...',
     success: (result) => {
       if (result.success) return 'KYC Submitted successfully!';
-      throw new Error(result.error); // Fallback to error state if logic fails
+      throw new Error(result.error); 
     },
     error: (err) => `Error: ${err.message || "Upload failed"}`,
   });
@@ -31,14 +31,14 @@ const KycComp = () => {
 
   const renderStatus = (status) => {
     switch (status) {
-      case "approved":
+      case true:
         return (
           <div className="flex items-center gap-2 text-green-400">
             <CheckCircleIcon className="w-5 h-5" />
             Approved
           </div>
         );
-      case "rejected":
+      case false:
         return (
           <div className="flex items-center gap-2 text-red-400">
             <XCircleIcon className="w-5 h-5" />
@@ -65,7 +65,6 @@ const KycComp = () => {
         </p>
       </div>
     {error && <p className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 rounded-lg">{error}</p>}
-      {/* If KYC already submitted */}
       {kycData ? (
         /* Status View */
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -86,7 +85,6 @@ const KycComp = () => {
           </div>
         </div>
       ) : (
-        /* Submission Form */
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-6">Submit Your KYC</h2>
           <div className="space-y-6">
