@@ -1,84 +1,59 @@
-import React, { useState } from "react";
-import {ArrowLeftIcon} from "@heroicons/react/24/outline"
+import React, { useEffect, useState } from "react";
+import { ArrowLeftIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-const MOCK_TRAINS = [
-  {
-    id: 1,
-    name: "Rajdhani Express",
-    number: "12951",
-    source: "Delhi",
-    destination: "Mumbai",
-    departure: "16:30",
-    arrival: "08:15",
-    price: 2450,
-    tax: 200,
-    discount: 150,
-    seatsAvailable: 50,
-    weekdays: [1, 2, 3, 4, 5],
-  },
-  {
-    id: 2,
-    name: "Shatabdi Express",
-    number: "12009",
-    source: "Delhi",
-    destination: "Chandigarh",
-    departure: "07:00",
-    arrival: "11:00",
-    price: 980,
-    tax: 50,
-    discount: 50,
-    seatsAvailable: 20,
-    weekdays: [1, 3, 5, 7],
-  },
-];
+import useTicketStore from "@/stores/admin/ticketStore";
+import toast from "react-hot-toast";
 
-const weekdaysSymbols = ["S", "M", "T", "W", "T", "F", "S"];
 
 const TrainComp = () => {
+  const navigate = useNavigate();
+  const { tickets, searchTickets, bookTicket, isLoading, clearTickets } = useTicketStore();
+
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
-  const [date, setDate] = useState("");
-  const [results, setResults] = useState([]);
-  const navigate = useNavigate()
-  const [modalTrain, setModalTrain] = useState(null); // Step 1: Train info
-  const [bookingStep, setBookingStep] = useState(false); // Step 2: Passenger details
-
+  const [name, setName] = useState("");
+  
+  const [modalTrain, setModalTrain] = useState(null);
+  const [bookingStep, setBookingStep] = useState(false);
   const [passengers, setPassengers] = useState([{ name: "", age: "", gender: "" }]);
   const [numSeats, setNumSeats] = useState(1);
 
-  const searchTrains = () => {
-    const filtered = MOCK_TRAINS.filter(
-      (train) =>
-        train.source.toLowerCase().includes(source.toLowerCase()) &&
-        train.destination.toLowerCase().includes(destination.toLowerCase())
-    );
-    setResults(filtered);
+  const handleSearch = () => {
+    searchTickets({ source, destination, name, ticketType: "Train" });
+  };
+  useEffect(()=>{
+    searchTickets({ source, destination, name, ticketType: "Train" });
+  },[searchTickets])
+
+  const handleReset = () => {
+    setSource("");
+    setDestination("");
+    setName("");
+    clearTickets();
   };
 
-  const totalAmount = (train) =>
-    numSeats * (train.price + train.tax - train.discount);
 
-  const handleConfirmBooking = () => {
-    alert(
-      `Ticket booked for ${passengers
-        .map((p) => p.name)
-        .join(", ")} on ${modalTrain.name} (${modalTrain.number}) from ${
-        modalTrain.source
-      } to ${modalTrain.destination} on ${date}. Total Paid: ₹${totalAmount(
-        modalTrain
-      )}`
-    );
-    // Reset all states
-    setModalTrain(null);
-    setBookingStep(false);
-    setPassengers([{ name: "", age: "", gender: "" }]);
-    setNumSeats(1);
-  };
+  const handleConfirmBooking = async () => {
+    const payload = {
+      ticketId: modalTrain._id,
+      passengers: passengers.slice(0, numSeats)
+    };
 
-  const addPassenger = () => {
-    if (passengers.length < numSeats) {
-      setPassengers([...passengers, { name: "", age: "", gender: "" }]);
-    }
+    toast.promise(bookTicket(payload), {
+      loading: 'Processing your booking...',
+      success: (res) => {
+        if (res.success) {
+          setModalTrain(null);
+          setBookingStep(false);
+          setPassengers([{ name: "", age: "", gender: "" }]);
+          setNumSeats(1);
+          handleSearch(); // Refresh list to show updated seats
+          return "Ticket Booked Successfully!";
+        }
+        throw new Error(res.error);
+      },
+      error: (err) => err.message,
+    });
   };
 
   const updatePassenger = (index, field, value) => {
@@ -88,225 +63,107 @@ const TrainComp = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto p-4">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ArrowLeftIcon onClick={()=>navigate("/tickets")} className="w-5 h-5 cursor-pointer" />
-          Search Train Tickets</h1>
-        <p className="text-gray-400">Find trains between your source and destination</p>
+        <h1 className="text-3xl font-bold flex items-center gap-2 text-white">
+          <ArrowLeftIcon onClick={() => navigate("/tickets")} className="w-5 h-5 cursor-pointer" />
+          Train Reservations
+        </h1>
+        <p className="text-zinc-400">Search for available trains across the network</p>
       </div>
 
       {/* Search Box */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <input
-            placeholder="Source"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-          />
-          <input
-            placeholder="Destination"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-          />
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-          />
-          <button
-            onClick={searchTrains}
-            className="bg-green-600 hover:bg-green-500 transition rounded-lg font-medium"
-          >
-            Search
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <input placeholder="Source" value={source} onChange={(e) => setSource(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white" />
+          <input placeholder="Destination" value={destination} onChange={(e) => setDestination(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white" />
+          <input placeholder="Train Name/No." value={name} onChange={(e) => setName(e.target.value)}
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white" />
+          
+          <button onClick={handleSearch} disabled={isLoading} className="bg-green-600 hover:bg-green-500 rounded-lg font-bold text-white transition">
+            {isLoading ? "Searching..." : "Search"}
+          </button>
+          
+          <button onClick={handleReset} className="bg-zinc-800 hover:bg-zinc-700 rounded-lg flex items-center justify-center gap-2 text-zinc-300">
+            <ArrowPathIcon className="w-4 h-4" /> Reset
           </button>
         </div>
       </div>
 
       {/* Results */}
-{results.length === 0 ? (
-  <p className="text-gray-400 text-sm text-center">No trains found</p>
-) : (
-  <div className="space-y-4">
-    {results.map((train) => (
-      <div
-        key={train.id}
-        className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex justify-between items-center"
-      >
-        {/* Left Block: Train Info */}
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold">{train.name}</h2>
-          <p className="text-sm text-gray-400">{train.number}</p>
-          <p className="mt-2 text-sm">{train.source} → {train.destination}</p>
-          <p className="text-sm text-gray-400">{train.departure} - {train.arrival}</p>
-        </div>
-
-        {/* Center Block: Weekdays & Seats */}
-        <div className="flex-1 text-center">
-          <div className="flex justify-center gap-1 mb-2">
-            {weekdaysSymbols.map((d, idx) => (
-              <span
-                key={idx}
-                className={train.weekdays.includes(idx) ? "text-green-400 font-bold" : "text-gray-400"}
-              >
-                {d}
-              </span>
-            ))}
-          </div>
-          <p className="text-sm text-gray-400">
-            Seats Available: <span className="font-semibold">{train.seatsAvailable}</span>
-          </p>
-        </div>
-
-        {/* Right Block: Price & Book */}
-        <div className="flex-1 text-right">
-          <p className="text-xl font-bold text-green-400">
-            ₹ {train.price + train.tax - train.discount}
-          </p>
-          <button
-            onClick={() => setModalTrain(train)}
-            className="mt-3 bg-green-600 hover:bg-green-500 px-5 py-2 rounded-lg text-sm font-medium"
-          >
-            Book
-          </button>
-        </div>
+      <div className="space-y-4">
+        {tickets.length === 0 ? (
+          <p className="text-zinc-500 text-center py-10">No trains found. Try changing your search filters.</p>
+        ) : (
+          tickets.map((train) => (
+            <div key={train._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex justify-between items-center hover:border-zinc-700 transition">
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-white">{train.name}</h2>
+                <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest">{train.source} → {train.destination}</p>
+                <p className="text-sm text-zinc-300 font-mono">{train.timing}</p>
+              </div>
+              <div className="flex-1 text-center hidden md:block">
+                <p className="text-sm text-zinc-400">Seats Available</p>
+                <p className="text-xl font-bold text-white">{train.seatsAvailable}</p>
+              </div>
+              <div className="flex-1 text-right">
+                <p className="text-xl font-bold text-green-400">₹{train.price + (train.tax || 0) - (train.discount || 0)}</p>
+                <button onClick={() => setModalTrain(train)} className="mt-2 bg-green-600 hover:bg-green-500 px-6 py-2 rounded-lg text-sm font-bold text-white">Book</button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
-    ))}
-  </div>
-)}
 
-
-      {/* Modal */}
+      {/* Booking Modal (Simplified logic similar to Flight) */}
       {modalTrain && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-xl p-6 max-w-lg w-full relative">
-            <button
-              onClick={() => {
-                setModalTrain(null);
-                setBookingStep(false);
-                setPassengers([{ name: "", age: "", gender: "" }]);
-                setNumSeats(1);
-              }}
-              className="absolute top-3 right-3 text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-lg w-full relative">
+            <button onClick={() => { setModalTrain(null); setBookingStep(false); }} className="absolute top-4 right-4 text-zinc-400 hover:text-white">✕</button>
 
             {!bookingStep ? (
-              // Step 1: Train Info + Seats
               <>
-                <h2 className="text-xl font-semibold mb-4">{modalTrain.name}</h2>
-                <p>
-                  <span className="font-semibold">From:</span> {modalTrain.source}{" "}
-                  <span className="font-semibold">To:</span> {modalTrain.destination}
-                </p>
-                <p>
-                  <span className="font-semibold">Train No:</span> {modalTrain.number}
-                </p>
-                <p>
-                  <span className="font-semibold">Weekdays:</span>{" "}
-                  {weekdaysSymbols.map((d, idx) => (
-                    <span
-                      key={idx}
-                      className={modalTrain.weekdays.includes(idx) ? "text-green-400 font-bold" : "text-gray-400"}
-                    >
-                      {d}{" "}
-                    </span>
-                  ))}
-                </p>
-                <p>
-                  <span className="font-semibold">Price:</span> ₹ {modalTrain.price}
-                </p>
-                <p>
-                  <span className="font-semibold">Tax:</span> ₹ {modalTrain.tax}
-                </p>
-                <p>
-                  <span className="font-semibold">Discount:</span> ₹ {modalTrain.discount}
-                </p>
-                <p>
-                  <span className="font-semibold">Seats Available:</span> {modalTrain.seatsAvailable}
-                </p>
-
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="font-semibold">Number of Seats:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={modalTrain.seatsAvailable}
-                    value={numSeats}
-                    onChange={(e) => setNumSeats(Number(e.target.value))}
-                    className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 w-16 text-center"
-                  />
+                <h2 className="text-xl font-bold mb-4 text-white">{modalTrain.name}</h2>
+                <div className="space-y-2 text-sm text-zinc-400 mb-6">
+                  <p>Route: {modalTrain.source} to {modalTrain.destination}</p>
+                  <p>Timing: {modalTrain.timing}</p>
+                  <p className="text-green-500 font-bold">Price per seat: ₹{modalTrain.price + (modalTrain.tax || 0) - (modalTrain.discount || 0)}</p>
                 </div>
-
-                <p className="mt-2 font-bold text-green-400">
-                  Total: ₹ {totalAmount(modalTrain)}
-                </p>
-
-                <button
-                  onClick={() => setBookingStep(true)}
-                  className="mt-4 w-full bg-green-600 hover:bg-green-500 py-2 rounded-lg font-medium"
-                >
-                  Proceed to Booking
-                </button>
+                <div className="mb-6">
+                  <label className="text-xs text-zinc-500 uppercase block mb-1">Seats to Book</label>
+                  <input type="number" min={1} max={modalTrain.seatsAvailable} value={numSeats} onChange={(e) => setNumSeats(Number(e.target.value))}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white" />
+                </div>
+                <button onClick={() => {
+                  setPassengers(Array.from({ length: numSeats }, () => ({ name: "", age: "", gender: "" })));
+                  setBookingStep(true);
+                }} className="w-full bg-green-600 py-3 rounded-xl font-bold text-white">Continue to Passengers</button>
               </>
             ) : (
-              // Step 2: Passenger Details
               <>
-                <h2 className="text-xl font-semibold mb-4">Passenger Details</h2>
-                {passengers.map((p, idx) => (
-                  <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <input
-                      placeholder="Passenger Name"
-                      value={p.name}
-                      onChange={(e) => updatePassenger(idx, "name", e.target.value)}
-                      className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Age"
-                      value={p.age}
-                      onChange={(e) => updatePassenger(idx, "age", e.target.value)}
-                      className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-                    />
-                    <select
-                      value={p.gender}
-                      onChange={(e) => updatePassenger(idx, "gender", e.target.value)}
-                      className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                ))}
-
-                {passengers.length < numSeats && (
-                  <button
-                    onClick={addPassenger}
-                    className="mb-4 text-sm text-blue-400 hover:underline"
-                  >
-                    + Add Another Passenger
-                  </button>
-                )}
-
-                <div className="mt-6 flex justify-end gap-2">
-                  <button
-                    onClick={() => setBookingStep(false)}
-                    className="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-lg font-medium"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleConfirmBooking}
-                    className="bg-green-600 hover:bg-green-500 px-6 py-2 rounded-lg font-medium"
-                  >
-                    Pay & Book
-                  </button>
+                <h2 className="text-xl font-bold mb-4 text-white">Passenger Information</h2>
+                <div className="max-h-60 overflow-y-auto space-y-4 pr-2">
+                  {passengers.map((p, idx) => (
+                    <div key={idx} className="p-3 border border-zinc-800 rounded-lg bg-zinc-800/20">
+                      <p className="text-[10px] text-zinc-500 mb-2 uppercase">Passenger {idx + 1}</p>
+                      <input placeholder="Name" value={p.name} onChange={(e) => updatePassenger(idx, "name", e.target.value)} className="w-full bg-zinc-800 mb-2 rounded-lg px-3 py-2 text-sm text-white" />
+                      <div className="flex gap-2">
+                        <input type="number" placeholder="Age" value={p.age} onChange={(e) => updatePassenger(idx, "age", e.target.value)} className="w-1/3 bg-zinc-800 rounded-lg px-3 py-2 text-sm text-white" />
+                        <select value={p.gender} onChange={(e) => updatePassenger(idx, "gender", e.target.value)} className="w-2/3 bg-zinc-800 rounded-lg px-3 py-2 text-sm text-white">
+                          <option value="">Gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button onClick={() => setBookingStep(false)} className="flex-1 py-2 bg-zinc-800 text-zinc-400 rounded-lg">Back</button>
+                  <button onClick={handleConfirmBooking} className="flex-1 py-2 bg-green-600 text-white font-bold rounded-lg">Pay & Confirm</button>
                 </div>
               </>
             )}

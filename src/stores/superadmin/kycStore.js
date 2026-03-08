@@ -19,11 +19,7 @@ const useSuperAdminStore = create((set) => ({
   acceptKyc: async (kycId) => {
     try {
       await axiosInstance.put(`/api/superadmin/kyc/accept?kycId=${kycId}`);
-      set((state) => ({
-        requests: state.requests.map((r) =>{ if(r._id === kycId){
-            r.status === true
-        }}),
-      }));
+      await fetchAllRequests()
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to accept KYC";
@@ -34,9 +30,7 @@ const useSuperAdminStore = create((set) => ({
   declineKyc: async (kycId) => {
     try {
       await axiosInstance.put(`/api/superadmin/kyc/decline?kycId=${kycId}`);
-      set((state) => ({
-        requests: state.requests.filter((r) => r._id !== kycId),
-      }));
+      await fetchAllRequests()
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to decline KYC";

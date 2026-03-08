@@ -1,303 +1,175 @@
 import React, { useEffect, useState } from "react";
-
-// Mock statements data
-const MOCK_STATEMENTS = [
-  {
-    id: 1,
-    type: "received",
-    title: "Salary Credit",
-    amount: 50000,
-    date: "2024-11-02",
-    description: "Monthly salary credited",
-  },
-  {
-    id: 2,
-    type: "payment",
-    title: "Flight Ticket",
-    amount: -5200,
-    date: "2024-11-05",
-    description: "Air India ticket booking",
-  },
-  {
-    id: 3,
-    type: "paid",
-    title: "Electricity Bill",
-    amount: -1800,
-    date: "2024-11-08",
-    description: "November electricity bill",
-  },
-];
-
-const ITEMS_PER_PAGE = 4;
+import useStatementStore from "@/stores/admin/statementStore";
+import { 
+  ArrowPathIcon, 
+  DocumentArrowDownIcon, 
+  TableCellsIcon,
+  FunnelIcon 
+} from "@heroicons/react/24/outline";
 
 const StatementComp = () => {
-  const [statements, setStatements] = useState(MOCK_STATEMENTS);
-  const [filterType, setFilterType] = useState("all");
+  const { statements, pagination, fetchStatements, exportCSV, exportPDF, isLoading } = useStatementStore();
+  
+  const [status, setStatus] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [showModal, setShowModal] = useState(false);
-  const [newPayment, setNewPayment] = useState({
-    type: "payment",
-    title: "",
-    amount: "",
-    date: "",
-    description: "",
-  });
-
-  /* ---------------- FILTERING ---------------- */
-  const filteredStatements = statements.filter((item) => {
-    const matchType = filterType === "all" ? true : item.type === filterType;
-    const itemDate = new Date(item.date);
-    const matchStart = startDate ? itemDate >= new Date(startDate) : true;
-    const matchEnd = endDate ? itemDate <= new Date(endDate) : true;
-    return matchType && matchStart && matchEnd;
-  });
-
-  /* ---------------- PAGINATION ---------------- */
-  const totalPages = Math.ceil(filteredStatements.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedData = filteredStatements.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
-
+  // Initial Fetch on load and when page changes
   useEffect(() => {
+    fetchStatements({ status, startDate, endDate, page: currentPage });
+  }, [currentPage]);
+
+  const handleSearch = () => {
+    setCurrentPage(1); // Reset to first page on new search
+    fetchStatements({ status, startDate, endDate, page: 1 });
+  };
+
+  const handleReset = () => {
+    setStatus("");
+    setStartDate("");
+    setEndDate("");
     setCurrentPage(1);
-  }, [filterType, startDate, endDate]);
-
-  /* ---------------- EXPORT CSV ---------------- */
-  const exportCSV = () => {
-    const headers = ["Date,Title,Type,Amount,Description"];
-    const rows = filteredStatements.map(
-      (s) =>
-        `${s.date},${s.title},${s.type},${s.amount},"${s.description}"`
-    );
-    const csv = [...headers, ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "statements.csv";
-    a.click();
+    fetchStatements({ page: 1 });
   };
 
-  /* ---------------- EXPORT PDF ---------------- */
-  const exportPDF = () => {
-    window.print();
-  };
-
-  /* ---------------- ADD PAYMENT ---------------- */
-  const handleAddPayment = () => {
-    if (!newPayment.title || !newPayment.amount || !newPayment.date) return;
-
-    setStatements((prev) => [
-      {
-        id: Date.now(),
-        ...newPayment,
-        amount:
-          newPayment.type === "received"
-            ? Math.abs(Number(newPayment.amount))
-            : -Math.abs(Number(newPayment.amount)),
-      },
-      ...prev,
-    ]);
-
-    setShowModal(false);
-    setNewPayment({
-      type: "payment",
-      title: "",
-      amount: "",
-      date: "",
-      description: "",
-    });
-  };
+  const handleDownloadCSV = () => exportCSV({ status, startDate, endDate });
+  const handleDownloadPDF = () => exportPDF({ status, startDate, endDate });
 
   return (
-    <div className="max-w-6xl mx-auto print:p-0">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-6xl mx-auto p-4 print:p-0">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Account Statements</h1>
-          <p className="text-gray-400">
-            View all your transactions and payments
-          </p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Account Statements</h1>
+          <p className="text-zinc-400 mt-1">Transaction history and financial reporting</p>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3 print:hidden">
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg font-medium"
-          >
-            + Add Payment
+          <button onClick={handleDownloadCSV} className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl text-sm transition border border-zinc-700">
+            <TableCellsIcon className="w-4 h-4 text-green-500" /> 
+            <span>Export Excel</span>
           </button>
-          <button
-            onClick={exportCSV}
-            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg"
-          >
-            Export CSV
-          </button>
-          <button
-            onClick={exportPDF}
-            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg"
-          >
-            Export PDF
+          <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl text-sm transition border border-zinc-700">
+            <DocumentArrowDownIcon className="w-4 h-4 text-red-500" /> 
+            <span>Export PDF</span>
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6 flex gap-4 print:hidden">
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-        >
-          <option value="all">All</option>
-          <option value="received">Received</option>
-          <option value="paid">Paid</option>
-          <option value="payment">Payments</option>
-        </select>
+      {/* Advanced Filters */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-8 grid grid-cols-1 md:grid-cols-5 gap-4 print:hidden items-end">
+        <div className="md:col-span-1">
+          <label className="text-[10px] uppercase text-zinc-500 font-bold mb-1.5 block">Status</label>
+          <select 
+            value={status} 
+            onChange={(e) => setStatus(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white outline-none focus:ring-1 focus:ring-green-500"
+          >
+            <option value="">All Status</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+          </select>
+        </div>
 
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-        />
+        <div>
+          <label className="text-[10px] uppercase text-zinc-500 font-bold mb-1.5 block">Start Date</label>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white outline-none focus:ring-1 focus:ring-green-500" />
+        </div>
 
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-        />
+        <div>
+          <label className="text-[10px] uppercase text-zinc-500 font-bold mb-1.5 block">End Date</label>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white outline-none focus:ring-1 focus:ring-green-500" />
+        </div>
+
+        <button onClick={handleSearch} className="bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg font-bold transition flex items-center justify-center gap-2">
+          <FunnelIcon className="w-4 h-4" /> Apply
+        </button>
+
+        <button onClick={handleReset} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 py-2 rounded-lg flex items-center justify-center gap-2 transition border border-zinc-700">
+          <ArrowPathIcon className="w-4 h-4" /> Reset
+        </button>
       </div>
 
-      {/* Statement List */}
-      <div className="space-y-4">
-        {paginatedData.map((item) => (
-          <div
-            key={item.id}
-            className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex justify-between"
-          >
-            <div>
-              <h3 className="font-semibold">{item.title}</h3>
-              <p className="text-sm text-gray-400">{item.description}</p>
-              <p className="text-xs text-gray-500">{item.date}</p>
-            </div>
+      {/* Transaction Feed */}
+      <div className="space-y-3">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+            <div className="w-12 h-12 bg-zinc-800 rounded-full mb-4"></div>
+            <p className="text-zinc-500 text-sm">Fetching your financial history...</p>
+          </div>
+        ) : statements.length > 0 ? (
+          statements.map((item) => (
+            <div key={item._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex justify-between items-center hover:border-zinc-600 transition shadow-sm group">
+              <div className="flex gap-4 items-center">
+                <div className={`w-1.5 h-12 rounded-full transition-colors ${item.amount > 0 ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]'}`}></div>
+                <div>
+                  <h3 className="font-bold text-white group-hover:text-green-400 transition-colors">
+                    {item.bookingId?.name || "UPI Transaction"}
+                  </h3>
+                  <p className="text-xs text-zinc-500 font-mono">ID: {item.transactionId || item._id}</p>
+                  <p className="text-[10px] text-zinc-600 mt-1 uppercase tracking-tighter">
+                    {new Date(item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </p>
+                </div>
+              </div>
 
-            <div className="text-right">
-              <p
-                className={`font-bold ${
-                  item.amount > 0 ? "text-green-400" : "text-red-400"
+              <div className="text-right">
+                <p className={`text-xl font-bold ${item.amount > 0 ? "text-green-400" : "text-red-400"}`}>
+                  {item.amount > 0 ? "+" : "-"} ₹{Math.abs(item.amount).toLocaleString('en-IN')}
+                </p>
+                <span className={`text-[9px] px-2 py-0.5 rounded-full uppercase font-black tracking-widest ${
+                  item.status === 'completed' ? 'bg-green-900/30 text-green-500' : 'bg-zinc-800 text-zinc-500'
+                }`}>
+                  {item.status}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-24 bg-zinc-900/40 border border-dashed border-zinc-800 rounded-3xl">
+            <p className="text-zinc-500 italic text-sm">No transaction records match your filters.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Pagination Bar */}
+      {!isLoading && pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center gap-10 mt-12 print:hidden">
+          <button 
+            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
+            disabled={currentPage === 1}
+            className="text-sm font-semibold text-zinc-500 hover:text-white disabled:opacity-20 transition-all"
+          >
+            ← Previous
+          </button>
+          
+          <div className="flex gap-2">
+            {[...Array(pagination.totalPages)].map((_, i) => (
+              <button 
+                key={i} 
+                onClick={() => setCurrentPage(i + 1)}
+                className={`w-9 h-9 rounded-xl text-xs font-bold transition-all border ${
+                  currentPage === i + 1 
+                  ? 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/20' 
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:bg-zinc-800'
                 }`}
               >
-                {item.amount > 0 ? "+" : "-"}₹{Math.abs(item.amount)}
-              </p>
-              <span className="text-xs text-gray-400 uppercase">
-                {item.type}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-4 mt-8 print:hidden">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-700 rounded-lg"
-          >
-            Previous
-          </button>
-          <span className="text-gray-400">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-700 rounded-lg"
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {/* Add Payment Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Add Payment</h2>
-
-            <select
-              value={newPayment.type}
-              onChange={(e) =>
-                setNewPayment({ ...newPayment, type: e.target.value })
-              }
-              className="w-full mb-3 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-            >
-              <option value="payment">Payment</option>
-              <option value="paid">Paid</option>
-              <option value="received">Received</option>
-            </select>
-
-            <input
-              placeholder="Title"
-              className="w-full mb-3 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-              onChange={(e) =>
-                setNewPayment({ ...newPayment, title: e.target.value })
-              }
-            />
-
-            <input
-              type="number"
-              placeholder="Amount"
-              className="w-full mb-3 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-              onChange={(e) =>
-                setNewPayment({ ...newPayment, amount: e.target.value })
-              }
-            />
-
-            <input
-              type="date"
-              className="w-full mb-3 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-              onChange={(e) =>
-                setNewPayment({ ...newPayment, date: e.target.value })
-              }
-            />
-
-            <textarea
-              placeholder="Description"
-              className="w-full mb-4 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2"
-              onChange={(e) =>
-                setNewPayment({
-                  ...newPayment,
-                  description: e.target.value,
-                })
-              }
-            />
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-700 rounded-lg"
-              >
-                Cancel
+                {i + 1}
               </button>
-              <button
-                onClick={handleAddPayment}
-                className="px-4 py-2 bg-green-600 rounded-lg"
-              >
-                Add
-              </button>
-            </div>
+            ))}
           </div>
+
+          <button 
+            onClick={() => setCurrentPage(p => Math.min(p + 1, pagination.totalPages))} 
+            disabled={currentPage === pagination.totalPages}
+            className="text-sm font-semibold text-zinc-500 hover:text-white disabled:opacity-20 transition-all"
+          >
+            Next →
+          </button>
         </div>
       )}
     </div>

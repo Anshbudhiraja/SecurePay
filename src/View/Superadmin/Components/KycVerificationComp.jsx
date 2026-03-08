@@ -34,15 +34,16 @@ const KycVerificationComp = () => {
         <p className="text-gray-400">Review and verify user KYC requests</p>
       </div>
 
-      {requests.length > 0 ? (
+      {requests && requests.length > 0 ? (
         <div className="space-y-4">
-          {requests.map((req) => (
+          {requests?.filter(req => req !== null)?.map((req) => {
+           return (
             <div key={req._id} className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between">
               <div>
                 <p className="font-semibold text-lg">
-                  {req.userId?.firstName} {req.userId?.lastName}
+                  {req.userId ? `${req.userId.firstName || ""} ${req.userId.lastName || ""}` : "Unknown User"}
                 </p>
-                <p className="text-sm text-gray-400">{req.userId?.email}</p>
+                <p className="text-sm text-gray-400">{req.userId?.email || "No email available"}</p>
               </div>
 
               <div className="flex items-center gap-3 mt-4 md:mt-0">
@@ -61,7 +62,7 @@ const KycVerificationComp = () => {
                 </button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       ) : (
         <p className="text-gray-400 text-center mt-10">No pending KYC requests</p>

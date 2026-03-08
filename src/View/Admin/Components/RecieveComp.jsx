@@ -1,21 +1,28 @@
-import React, { useState } from "react";
-import { QRCodeCanvas } from "qrcode.react";
-import {ArrowLeftIcon} from "@heroicons/react/24/outline"
+import React, { useEffect, useState } from "react";
+import { ArrowLeftIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-const UPI_ID = "ansh@upi"; // your static UPI ID
+import useTransferStore from "@/stores/admin/transferStore";
+import useAuthStore from "@/stores/authStore";
+import toast from "react-hot-toast";
 
 const RecieveComp = () => {
+  const navigate = useNavigate();
+  const { user,fetchUser } = useAuthStore();
+  const { generateRequestQr, requestedQr, isLoading, clearRequestedQr } = useTransferStore();
   const [amount, setAmount] = useState("");
-  const [showQRModal, setShowQRModal] = useState(false);
-  const navigate = useNavigate()
-  // UPI QR payload
-  const qrValue = amount
-    ? `upi://pay?pa=${UPI_ID}&am=${amount}&cu=INR`
-    : `upi://pay?pa=${UPI_ID}&cu=INR`;
+
+  useEffect(()=>{
+    fetchUser()
+  },[fetchUser])
+  const handleGenerate = async () => {
+    if (!amount || amount <= 0) return toast.error("Enter valid amount");
+    
+    const res = await generateRequestQr(amount);
+    if (!res.success) toast.error(res.error);
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-2">
         <ArrowLeftIcon onClick={()=>navigate("/transfer")} className="w-5 h-5 cursor-pointer" />
@@ -25,94 +32,58 @@ const RecieveComp = () => {
           Share your UPI QR or generate payment request
         </p>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* ================= Static QR Card ================= */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col items-center hover:border-green-500 transition">
-          <h2 className="text-lg font-semibold mb-4">
-            Your UPI QR
-          </h2>
-
-          <div className="bg-white p-3 rounded-xl">
-            <QRCodeCanvas value={qrValue} size={180} />
+        {/* Static Profile QR */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col items-center">
+          <h2 className="text-lg font-semibold mb-6 text-white">Your Personal QR</h2>
+          <div className="bg-white p-3 rounded-2xl shadow-xl">
+            {user?.upiQr ? (
+              <img src={user.upiQr} alt="My QR" className="w-48 h-48" />
+            ) : (
+              <div className="w-48 h-48 flex items-center justify-center text-zinc-400 italic text-xs">Generating...</div>
+            )}
           </div>
-
-          <p className="mt-4 text-sm text-gray-400">
-            UPI ID
-          </p>
-          <p className="font-semibold text-green-400">
-            {UPI_ID}
-          </p>
-
-          <p className="text-xs text-gray-500 mt-3 text-center">
-            Anyone can scan and pay you
-          </p>
+          <p className="mt-6 text-xs text-zinc-500 uppercase tracking-widest">UPI ID</p>
+          <p className="font-mono text-green-400">{user?.upiId || "Loading..."}</p>
         </div>
 
-        {/* ================= Generate QR with Amount ================= */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-green-500 transition">
-          <h2 className="text-lg font-semibold mb-4">
-            Request Specific Amount
-          </h2>
-
-          {/* Amount Input */}
+        {/* Dynamic Amount QR */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col justify-center">
+          <h2 className="text-lg font-semibold mb-4 text-white">Request Specific Amount</h2>
           <div className="mb-6">
-            <label className="block text-sm text-gray-400 mb-1">
-              Enter Amount
-            </label>
-            <input
-              type="number"
-              placeholder="₹ 0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-green-500 outline-none"
-            />
+            <label className="text-xs text-zinc-500 uppercase mb-2 block">Amount to Receive</label>
+            <input type="number" placeholder="₹ 0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-xl outline-none focus:border-green-500" />
           </div>
-
-          {/* Generate Button */}
-          <button
-            disabled={!amount}
-            onClick={() => setShowQRModal(true)}
-            className={`w-full py-3 rounded-xl font-semibold transition ${
-              amount
-                ? "bg-green-600 hover:bg-green-500"
-                : "bg-gray-700 cursor-not-allowed text-gray-400"
-            }`}
-          >
-            Generate QR
+          <button disabled={!amount || isLoading} onClick={handleGenerate}
+            className="w-full py-3 rounded-xl font-bold bg-green-600 hover:bg-green-500 disabled:bg-zinc-800 transition-all">
+            {isLoading ? "Generating..." : "Generate Amount QR"}
           </button>
-
-          <p className="text-xs text-gray-500 mt-4 text-center">
-            QR will include the entered amount
-          </p>
         </div>
       </div>
 
-      {/* ================= QR Modal ================= */}
-      {showQRModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-sm text-center">
-            <h2 className="text-xl font-bold mb-2">
-              Receive ₹{amount}
-            </h2>
-            <p className="text-sm text-gray-400 mb-4">
-              Ask payer to scan this QR
-            </p>
-
-            <div className="bg-white p-4 rounded-xl inline-block">
-              <QRCodeCanvas value={qrValue} size={220} />
+      {/* QR Modal */}
+      {requestedQr && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 w-full max-w-sm text-center shadow-2xl">
+            <h2 className="text-2xl font-bold text-white mb-1">Receive ₹{requestedQr.amount}</h2>
+            <p className="text-zinc-500 text-sm mb-6">Scan to pay {requestedQr.payeeName}</p>
+            
+            <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mb-6">
+              <img src={requestedQr.qrCode} alt="Request QR" className="w-56 h-56" />
             </div>
 
-            <p className="mt-4 text-sm text-gray-400">
-              UPI ID: <span className="text-green-400">{UPI_ID}</span>
-            </p>
-
-            <button
-              onClick={() => setShowQRModal(false)}
-              className="mt-6 w-full py-2 rounded-lg bg-gray-700 hover:bg-gray-600"
-            >
-              Close
-            </button>
+            <div className="space-y-4">
+              <button onClick={() => {
+                const link = document.createElement('a');
+                link.href = requestedQr.qrCode;
+                link.download = `request_${requestedQr.amount}.png`;
+                link.click();
+              }} className="w-full flex items-center justify-center gap-2 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-white text-sm transition">
+                <ArrowDownTrayIcon className="w-4 h-4" /> Download QR
+              </button>
+              <button onClick={clearRequestedQr} className="w-full py-2 text-zinc-500 hover:text-white transition text-sm">Close</button>
+            </div>
           </div>
         </div>
       )}
