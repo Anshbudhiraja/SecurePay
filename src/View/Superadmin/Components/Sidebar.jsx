@@ -15,7 +15,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-
+import useAuthStore from "@/stores/authStore"
 const menuItems = [
   { name: "Dashboard", icon: HomeIcon,path:"/superadmin" },
   { name: "Analytics", icon: ChartBarIcon,path:"/analytics" },
@@ -28,6 +28,7 @@ const menuItems = [
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate()
+  const {logout} = useAuthStore()
 
   return (
     <div
@@ -107,7 +108,7 @@ export default function Sidebar() {
 
       {/* Bottom section */}
       <div>
-        <div className="flex items-center gap-x-4 p-2 rounded-md cursor-pointer hover:bg-red-600 transition">
+        <div onClick={logout} className="flex items-center gap-x-4 p-2 rounded-md cursor-pointer hover:bg-red-600 transition">
           <ArrowRightOnRectangleIcon className="w-6 h-6 text-red-400" />
           <span
             className={`text-sm font-medium text-red-400 ${

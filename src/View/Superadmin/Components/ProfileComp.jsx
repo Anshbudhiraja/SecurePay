@@ -124,7 +124,7 @@ const ProfileComp = () => {
 
           <div className="flex items-center gap-6 mb-8">
             <img
-              src={user?.image || "https://ui-avatars.com/api/?name=" + user?.firstName}
+              src={user?.image || (user?.firstName ? "https://ui-avatars.com/api/?name=" + user?.firstName : "profile.png")}
               alt="Profile"
               className="w-28 h-28 rounded-full object-cover border-4 border-zinc-800"
             />

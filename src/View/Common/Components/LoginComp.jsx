@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import useAuthStore from "../../../stores/authStore";
 import toast from "react-hot-toast";
-
+import { auth, googleProvider } from "@/utils/firebase";
+import { signInWithPopup } from "firebase/auth";
 const LoginComp = () => {
   const [formData, setFormData] = useState({
     email: "",
@@ -12,7 +13,7 @@ const LoginComp = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const { login, isLoading, error: apiError } = useAuthStore();
+  const { login, googleLogin,isLoading, error: apiError } = useAuthStore();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -50,8 +51,23 @@ const LoginComp = () => {
   }
 };
 
-  const handleGoogleLogin = () => {
-    console.log("Google login clicked");
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      const idToken = await result.user.getIdToken();
+      
+      const apiResult = await googleLogin(idToken);
+      
+      if (apiResult.success) {
+        toast.success("Logged in with Google!");
+      } else {
+        toast.error(apiResult.error);
+      }
+    } catch (error) {
+      console.error("Firebase Error:", error);
+      toast.error("Google sign-in was cancelled or failed.");
+    }
   };
 
   return (
@@ -112,15 +128,23 @@ const LoginComp = () => {
 
       <Button
         variant="outline"
+        type="button"
         onClick={handleGoogleLogin}
+        disabled={isLoading}
         className="w-full bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700"
       >
-        <img
-          src="https://www.svgrepo.com/show/475656/google-color.svg"
-          alt="Google"
-          className="w-5 h-5 mr-2"
-        />
-        Continue with Google
+        {isLoading ? (
+          "Processing..."
+        ) : (
+          <>
+            <img
+              src="https://www.svgrepo.com/show/475656/google-color.svg"
+              alt="Google"
+              className="w-5 h-5 mr-2"
+            />
+            Continue with Google
+          </>
+        )}
       </Button>
     </div>
   );

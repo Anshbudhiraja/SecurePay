@@ -17,19 +17,13 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// Response Interceptor (The Emergency Logout)
 axiosInstance.interceptors.response.use(
-  (response) => response, // If status is 2xx, just return the response
+  (response) => response, 
   (error) => {
-    // Check if the error is a 401 Unauthorized
     if (error.response && error.response.status === 401) {
       console.warn("Unauthorized! Emergency Logout triggered.");
-      
-      // 1. Clear the Zustand store
-      useAuthStore.getState().resetAuth();
-      
-      // 2. Optional: Force redirect to login
-      window.location.href = '/login'; 
+      useAuthStore.getState().resetAuth();  
+      window.location.href = '/'; 
     }
     return Promise.reject(error);
   }

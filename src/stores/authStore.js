@@ -7,10 +7,25 @@ const useAuthStore = create((set,get) => ({
   role: null,
   isLoading: false,
   error: null,
-  step: 'login', // 'login' or 'otp'
+  step: 'login', 
   tempEmail: null, 
   isProfileComplete: true,
 
+  googleLogin: async (idToken) => {
+  set({ isLoading: true, error: null });
+  try {
+    const response = await axiosInstance.post("/api/auth/google-login", { idToken });
+    const { token, role, user } = response.data.data;
+
+    localStorage.setItem("token", token);
+    set({ user, role,token, isLoading: false });
+    return { success: true, type: 'DONE' };
+  } catch (err) {
+    const errorMsg = err.response?.data?.message || "Google Login Failed";
+    set({ error: errorMsg, isLoading: false });
+    return { success: false, error: errorMsg };
+  }
+},
   login: async (email, password) => {
     set({ isLoading: true, error: null });
 
@@ -121,7 +136,18 @@ const useAuthStore = create((set,get) => ({
   clearError: () => set({ error: null }),
   setStep: (step) => set({ step }),
   setProfileComplete: (userData) => set({ user: userData, isProfileComplete: true }),
-  logout: () => set({ user: null, token: null, role: null, step: 'login' }),
+  logout: () => {
+  localStorage.removeItem('token');
+  delete axiosInstance.defaults.headers.common['Authorization'];
+  set({ 
+    user: null, 
+    token: null, 
+    role: null, 
+    step: 'login',
+    isProfileComplete: true 
+  }); 
+  window.location.href = '/'; 
+},
   resetAuth: () => {
     localStorage.removeItem('token');
     set({ 
