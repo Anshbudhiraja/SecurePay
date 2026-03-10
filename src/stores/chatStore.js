@@ -8,19 +8,21 @@ export const useChatStore = create((set, get) => ({
   conversations: [],
   messages: [],
   searchResults: [],
+  onlineUsers: [],
   selectedConversation: null,
   socket: null,
   loading: false,
 
 initializeSocket: (userId) => {
   if (get().socket?.connected) return;
-const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
   const socket = io(SOCKET_URL, {
-    query: { userId },
-    extraHeaders: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+  query: { userId },
+  auth: {
+    token: `Bearer ${token}`
+  },
+  transports: ["websocket"]
+});
 
   socket.on("newMessage", (message) => {
     if (!message) return;
@@ -39,6 +41,42 @@ const token = localStorage.getItem("token");
 
     fetchConversations();
   });
+  socket.on("onlineUsers", (users) => {
+  set({ onlineUsers: users });
+  });
+
+ socket.on("userStatusUpdate", ({ userId, status }) => {
+  set((state) => {
+    const updatedConversations = state.conversations.map((conv) => ({
+      ...conv,
+      participants: conv.participants.map((p) =>
+        p._id === userId ? { ...p, status } : p
+      ),
+    }));
+
+    const updatedSelected = state.selectedConversation
+      ? {
+          ...state.selectedConversation,
+          participants: state.selectedConversation.participants.map((p) =>
+            p._id === userId ? { ...p, status } : p
+          ),
+        }
+      : null;
+
+    return {
+      conversations: [...updatedConversations], // force new array
+      selectedConversation: updatedSelected,
+    };
+  });
+});
+    socket.on("messagesSeen", ({ conversationId }) => {
+        const { selectedConversation } = get();
+        if (selectedConversation?._id === conversationId) {
+            set((state) => ({
+                messages: state.messages.map(m => ({ ...m, seen: true }))
+            }));
+        }
+    });
 
   set({ socket });
 },
@@ -50,11 +88,31 @@ const token = localStorage.getItem("token");
       set({ socket: null });
     }
   },
+  markAsSeen: async (conversationId) => {
+    try {
+        await axiosInstance.post(`/api/chat/mark-messages-as-seen/${conversationId}`);
+        set((state) => ({
+            messages: state.messages.map(m => ({ ...m, seen: true }))
+        }));
+    } catch (error) {
+        console.error("Error marking messages as seen", error);
+    }
+  },
 
   fetchConversations: async () => {
     try {
       const res = await axiosInstance.get("/api/chat/conversations");
-      set({ conversations: res.data.data });
+      const { onlineUsers } = get();
+
+      const conversationsWithStatus = res.data.data.map((conv) => ({
+        ...conv,
+        participants: conv.participants.map((p) => ({
+          ...p,
+          status: onlineUsers.includes(p._id) ? "online" : "offline",
+        })),
+      }));
+
+      set({ conversations: conversationsWithStatus });
     } catch (error) {
       console.error("Error fetching conversations", error);
     }
