@@ -1,6 +1,19 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useChatStore } from "@/stores/chatStore";
+import toast from "react-hot-toast";
 
+const CallTimer = ({ formatTime }) => {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return <span>{formatTime(seconds)}</span>;
+};
 const ChatComp = ({ currentUser }) => {
   const {
     conversations,
@@ -16,11 +29,142 @@ const ChatComp = ({ currentUser }) => {
     disconnectSocket,
     clearMessages,
     markAsSeen,
+    socket
   } = useChatStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [text, setText] = useState("");
   const scrollRef = useRef(null);
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const [isCalling, setIsCalling] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null);
+  
+  // Refs for stable logic inside socket listeners
+  const isCallingRef = useRef(false);
+  const remoteStreamRef = useRef(null);
+  const remoteUserRef = useRef(null);
+  const peerConnection = useRef(null);
+  const ringtoneRef = useRef(new Audio("/ringing.mp3"));
+  const timerRef = useRef(null);
+  const autoCutRef = useRef(null);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+ const iceConfig = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  };
+  useEffect(() => { isCallingRef.current = isCalling; }, [isCalling]);
+  useEffect(() => { remoteStreamRef.current = remoteStream; }, [remoteStream]);
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  const getOtherUser = () => {
+    if (!selectedConversation || selectedConversation.isNew) return null;
+    return selectedConversation.participants?.find((p) => p._id !== currentUser?._id);
+  };
+  const handleEndCall = (sendSignal = true) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (autoCutRef.current) clearTimeout(autoCutRef.current);
+    setIsCalling(false);
+    setIncomingCall(null);
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+    if (sendSignal && remoteUserRef.current && socket) {
+      socket.emit("end-call", { to: remoteUserRef.current });
+    }
+    if (peerConnection.current) {
+      peerConnection.current.onicecandidate = null;
+      peerConnection.current.ontrack = null;
+      peerConnection.current.onconnectionstatechange = null;
+      peerConnection.current.close();
+      peerConnection.current = null;
+    }
+
+    // const targetId = getOtherUser()?._id || incomingCall?.from;
+    // if (targetId && socket) socket.emit("end-call", { to: targetId });
+    setLocalStream(null);
+    setRemoteStream(null);    
+    remoteUserRef.current = null;
+  };
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("incoming-call", ({ from, offer, fromName }) => {
+      setIncomingCall({ from, offer, fromName });
+      remoteUserRef.current = from;
+    });
+
+    socket.on("call-accepted", async ({ answer }) => {
+      if (peerConnection.current) {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+      }
+    });
+
+    socket.on("ice-candidate", async ({ candidate }) => {
+      if (peerConnection.current) {
+        try {
+          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) { console.error("Error adding ice candidate", e); }
+      }
+    });
+
+    socket.on("call-ended", () => {
+      // Use Ref values to prevent multiple toast triggers/dependency issues
+      const wasConnecting = isCallingRef.current && !remoteStreamRef.current;
+      handleEndCall(false);
+      
+      toast.dismiss(); // Clear previous toasts to avoid stacking
+      if (wasConnecting) {
+        toast.error("Call Declined", {
+          icon: '📞',
+          style: { borderRadius: '10px', background: '#1C212C', color: '#fff', border: '1px solid #ef4444' },
+        });
+      } else {
+        toast("Call Ended", { icon: '📞',style: { borderRadius: '10px', background: '#1C212C', color: '#fff', border: '1px solid #ef4444' } });
+      }
+    });
+
+    return () => {
+      socket.off("incoming-call");
+      socket.off("call-accepted");
+      socket.off("ice-candidate");
+      socket.off("call-ended");
+    };
+  }, [socket]);
+
+useEffect(() => {
+    const ringtone = ringtoneRef.current;
+    const shouldRing = isCalling && !remoteStream;
+    if (shouldRing) {
+      ringtone.loop = true;
+      ringtone.play().catch(err => console.warn("Audio play blocked"));
+    } else {
+      ringtone.pause();
+      ringtone.currentTime = 0;
+    }
+    return () => ringtone.pause();
+  }, [isCalling, !!remoteStream]);
+
+  useEffect(() => {
+    if (isCalling && !remoteStream) {
+      autoCutRef.current = setTimeout(() => {
+        if (!remoteStreamRef.current) {
+          handleEndCall();
+          toast.error("No answer");
+        }
+      }, 60000);
+    }
+    // } else {
+    //   if (autoCutRef.current) clearTimeout(autoCutRef.current);
+    // }
+
+    return () => {
+      if (autoCutRef.current) clearTimeout(autoCutRef.current);
+    };
+  }, [isCalling, !!remoteStream]);
 
   useEffect(() => {
     if (selectedConversation && !selectedConversation.isNew && messages.length > 0) {
@@ -42,6 +186,38 @@ const ChatComp = ({ currentUser }) => {
     }
     return () => disconnectSocket();
   }, [currentUser?._id, initializeSocket, fetchConversations, disconnectSocket]);
+
+const handleAcceptCall = async () => {
+  const { from, offer } = incomingCall;
+  remoteUserRef.current = from;
+  setIsCalling(true);
+  setIncomingCall(null);
+
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  setLocalStream(stream);
+
+  peerConnection.current = new RTCPeerConnection(iceConfig);
+  peerConnection.current.onconnectionstatechange = () => {
+    if (["disconnected", "failed", "closed"].includes(peerConnection.current?.connectionState)) {
+      handleEndCall(false);
+    }
+  };
+  stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
+
+  peerConnection.current.ontrack = (event) => setRemoteStream(event.streams[0]);
+  
+  peerConnection.current.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.emit("ice-candidate", { to: from, candidate: event.candidate });
+    }
+  };
+
+  await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await peerConnection.current.createAnswer();
+  await peerConnection.current.setLocalDescription(answer);
+
+  socket.emit("answer-call", { to: from, answer });
+};
 
   const debounceRef = useRef(null);
   const handleUserSearch = (e) => {
@@ -86,11 +262,6 @@ const ChatComp = ({ currentUser }) => {
     setText("");
   };
 
-  const getOtherUser = () => {
-    if (!selectedConversation || selectedConversation.isNew) return null;
-    return selectedConversation.participants?.find((p) => p._id !== currentUser?._id);
-  };
-
   const getHeaderName = () => {
     if (!selectedConversation) return "";
     if (selectedConversation.isNew) return `${selectedConversation.firstName} ${selectedConversation.lastName}`;
@@ -102,6 +273,44 @@ const ChatComp = ({ currentUser }) => {
   );
   const isHeaderUserOnline = otherUser?.status === "online";
 
+const initiateVideoCall = async (targetUserId) => {
+  
+  if (!targetUserId) return;
+  remoteUserRef.current = targetUserId;
+  setIsCalling(true);
+  // 1. Get Camera/Mic access
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  setLocalStream(stream);
+
+  // 2. Initialize Peer Connection
+  peerConnection.current = new RTCPeerConnection(iceConfig);
+
+  peerConnection.current.onconnectionstatechange = () => {
+    if (["disconnected", "failed", "closed"].includes(peerConnection.current?.connectionState)) {
+      handleEndCall();
+    }
+  };
+  // 3. Add tracks to the connection
+  stream.getTracks().forEach(track => peerConnection.current?.addTrack(track, stream));
+
+  // 4. Handle remote stream arrival
+  peerConnection.current.ontrack = (event) => {
+    setRemoteStream(event.streams[0]);
+  };
+
+  // 5. Handle ICE candidates (Network info)
+  peerConnection.current.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.emit("ice-candidate", { to: targetUserId, candidate: event.candidate });
+    }
+  };
+
+  // 6. Create and Send Offer
+  const offer = await peerConnection.current.createOffer();
+  await peerConnection.current.setLocalDescription(offer);
+  
+  socket.emit("call-user", { to: targetUserId, offer });
+};
   return (
     <div className="flex flex-1 w-full h-full bg-[#11141B] border-l border-gray-800">
       
@@ -136,7 +345,6 @@ const ChatComp = ({ currentUser }) => {
             </div>
           )}
         </div>
-
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto">
           {conversations.map((conv) => {
@@ -189,6 +397,74 @@ const ChatComp = ({ currentUser }) => {
             );
           })}
         </div>
+        {incomingCall && (
+          <div className="absolute top-4 right-4 bg-gray-900 border border-green-500 p-4 rounded-lg shadow-2xl z-[60] flex flex-col gap-3">
+            <p className="text-white text-sm font-bold">{incomingCall.fromName} is calling...</p>
+            <div className="flex gap-2">
+              <button 
+                onClick={handleAcceptCall} 
+                className="bg-green-600 px-4 py-1 rounded text-xs font-bold"
+              >
+                Accept
+              </button>
+              <button 
+                onClick={() => {
+                  socket.emit("end-call", { to: incomingCall.from });
+                  setIncomingCall(null);
+                }} 
+                className="bg-red-600 px-4 py-1 rounded text-xs font-bold"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        )}
+        {isCalling && (
+        <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center">
+          <div className="relative w-full h-full">
+            {remoteStream ? (
+              <video 
+                autoPlay 
+                playsInline 
+                ref={el => { if(el) el.srcObject = remoteStream }} 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900">
+                <div className="relative">
+                  <div className="w-32 h-32 rounded-full bg-gray-700 flex items-center justify-center text-4xl font-bold animate-pulse">
+                    {getHeaderName().charAt(0)}
+                  </div>
+                  <div className="absolute inset-0 rounded-full border-4 border-green-500 animate-ping opacity-20"></div>
+                </div>
+                <h2 className="mt-6 text-xl font-bold text-white">Calling {getHeaderName()}...</h2>
+                <p className="text-gray-400 text-sm mt-2">Waiting for answer</p>
+              </div>
+            )}
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-black/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md flex items-center gap-3">
+              {remoteStream && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
+              <span className="text-white font-mono text-lg">
+                {remoteStream ? <CallTimer formatTime={formatTime} /> : "Ringing..."}
+              </span>
+            </div>
+            {/* Local Video (Small Picture-in-Picture) */}
+            <video 
+              autoPlay 
+              playsInline 
+              muted 
+              ref={el => { if(el) el.srcObject = localStream }} 
+              className="absolute bottom-4 right-4 w-48 rounded-lg border-2 border-green-500"
+            />
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+              <button onClick={handleEndCall} className="bg-red-600 p-4 rounded-full text-white hover:bg-red-700 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Main Chat Area */}
@@ -196,7 +472,8 @@ const ChatComp = ({ currentUser }) => {
         {selectedConversation ? (
           <>
             {/* Header */}
-           <div className="w-full p-4 border-b border-gray-800 bg-[#0B0E14] flex items-center gap-3">
+           <div className="w-full p-4 border-b border-gray-800 bg-[#0B0E14] flex items-center justify-between">
+              <div className="flex items-center gap-3">
               <div className="relative">
                 {otherUser?.image ? (<>
                   <img
@@ -233,6 +510,20 @@ const ChatComp = ({ currentUser }) => {
                   </p>
                 )}
               </div>
+              </div>
+              {!selectedConversation.isNew && (
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => initiateVideoCall(otherUser?._id)}
+                    className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-green-500"
+                    title="Start Video Call"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Messages */}
