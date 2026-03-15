@@ -8,7 +8,7 @@ const FlightTicket = () => {
       <Sidebar />
 
       {/* Main content */}
-      <div className="flex-1 p-7 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 md:p-7 overflow-auto">
         <FlightComp />
       </div>
     </div>

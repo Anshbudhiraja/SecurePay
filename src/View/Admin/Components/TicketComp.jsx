@@ -58,15 +58,15 @@ const TicketComp = () => {
   return (
     <div className="max-w-6xl mx-auto p-4">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold text-white">Book Tickets</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Book Tickets</h1>
         <p className="text-zinc-400">Choose a service or manage your booking history</p>
       </header>
 
       {/* Ticket Type Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
         {TICKET_TYPES.map((ticket) => (
           <a key={ticket.type} href={ticket.link} className="group rounded-xl overflow-hidden border border-zinc-800 hover:border-green-500 transition shadow-lg">
-            <img src={ticket.image} alt={ticket.title} className="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <img src={ticket.image} alt={ticket.title} className="h-40 sm:h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500" />
             <div className="p-4 bg-zinc-900">
               <h2 className="text-xl font-bold text-white">{ticket.title}</h2>
               <p className="text-sm text-zinc-500 uppercase tracking-widest">New Booking</p>
@@ -79,7 +79,7 @@ const TicketComp = () => {
         <h2 className="text-2xl font-bold text-white mb-6">Booking History</h2>
         
         {/* Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <input
             type="text"
             placeholder="Search bookings..."
@@ -90,7 +90,7 @@ const TicketComp = () => {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-white focus:ring-2 focus:ring-green-500 outline-none"
+            className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-white sm:w-auto w-full"
           >
             <option value="all">All Services</option>
             <option value="train">Trains Only</option>
@@ -106,7 +106,7 @@ const TicketComp = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {paginatedTickets.map((booking) => (
                 <div key={booking._id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition">
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
                     <h3 className="font-bold text-lg text-green-400">
                       {booking.ticketId?.name}
                     </h3>
@@ -117,7 +117,7 @@ const TicketComp = () => {
                   <p className="text-sm text-zinc-300">
                     {booking.ticketId?.source} → {booking.ticketId?.destination}
                   </p>
-                  <div className="mt-4 flex justify-between items-end">
+                  <div className="mt-4 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
                     <div className="text-xs text-zinc-500">
                       <p>Date: {new Date(booking.createdAt).toLocaleDateString()}</p>
                       <p>Passengers: {booking.totalSeats}</p>
@@ -130,11 +130,11 @@ const TicketComp = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-6 mt-10">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 mt-10">
                 <button
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
-                  className="px-6 py-2 rounded-xl bg-zinc-800 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-700 transition"
+                  className="px-4 sm:px-6 py-2 rounded-xl bg-zinc-800 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-700 transition"
                 >
                   Previous
                 </button>
@@ -144,7 +144,7 @@ const TicketComp = () => {
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
-                  className="px-6 py-2 rounded-xl bg-zinc-800 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-700 transition"
+                  className="px-4 sm:px-6 py-2 rounded-xl bg-zinc-800 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-700 transition"
                 >
                   Next
                 </button>

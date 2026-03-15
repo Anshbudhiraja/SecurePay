@@ -56,29 +56,29 @@ const KycComp = () => {
   };
   if (isLoading) return <div className="text-center text-gray-400">Loading KYC info...</div>;
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto w-full px-1 sm:px-2 overflow-x-hidden">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">KYC Verification</h1>
-        <p className="text-gray-400">
+  <h1 className="text-2xl sm:text-3xl font-bold">KYC Verification</h1>
+  <p className="text-gray-400 text-sm sm:text-base">
           Complete your KYC to unlock all features
         </p>
       </div>
     {error && <p className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 rounded-lg">{error}</p>}
       {kycData ? (
         /* Status View */
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 sm:p-6">
           <h2 className="text-xl font-semibold mb-4">Submitted KYC Details</h2>
           <div className="space-y-4 text-sm">
-            <div className="flex justify-between border-b border-gray-800 pb-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 border-b border-gray-800 pb-2">
               <span className="text-gray-400">Video Evidence</span>
               <a href={kycData.video} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">View Video</a>
             </div>
-            <div className="flex justify-between border-b border-gray-800 pb-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 border-b border-gray-800 pb-2">
               <span className="text-gray-400">ID Document</span>
               <a href={kycData.pdf} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">View PDF</a>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
               <span className="text-gray-400">Current Status</span>
               {renderStatus(kycData.status)}
             </div>
@@ -91,20 +91,20 @@ const KycComp = () => {
             <div>
               <label className="block text-sm text-gray-400 mb-2">Upload Recorded Video</label>
               <input type="file" accept="video/*" onChange={(e) => setVideo(e.target.files[0])}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300" />
+               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 text-sm text-gray-300" />
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-2">Upload Identity Document (PDF)</label>
               <input type="file" accept="application/pdf" onChange={(e) => setDocument(e.target.files[0])}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300" />
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 text-sm text-gray-300" />
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-stretch sm:justify-end">
               <button onClick={handleSubmit} disabled={isLoading}
-                className="bg-green-600 hover:bg-green-500 disabled:bg-gray-600 transition px-6 py-2 rounded-lg font-medium">
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-500 disabled:bg-gray-600 transition px-6 py-2 rounded-lg font-medium">
                 {isLoading ? "Uploading..." : "Submit KYC"}
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-4">
+            <p className="text-xs sm:text-sm text-gray-400 mt-4">
             ⚠️ KYC can be submitted only once. Please ensure files are correct.
           </p>
           </div>

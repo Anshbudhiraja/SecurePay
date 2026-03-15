@@ -39,7 +39,7 @@ const ChatComp = ({ currentUser }) => {
   const [remoteStream, setRemoteStream] = useState(null);
   const [isCalling, setIsCalling] = useState(false);
   const [incomingCall, setIncomingCall] = useState(null);
-  
+  const [showSidebar, setShowSidebar] = useState(true);
   // Refs for stable logic inside socket listeners
   const isCallingRef = useRef(false);
   const remoteStreamRef = useRef(null);
@@ -83,8 +83,6 @@ const ChatComp = ({ currentUser }) => {
       peerConnection.current = null;
     }
 
-    // const targetId = getOtherUser()?._id || incomingCall?.from;
-    // if (targetId && socket) socket.emit("end-call", { to: targetId });
     setLocalStream(null);
     setRemoteStream(null);    
     remoteUserRef.current = null;
@@ -157,9 +155,6 @@ useEffect(() => {
         }
       }, 60000);
     }
-    // } else {
-    //   if (autoCutRef.current) clearTimeout(autoCutRef.current);
-    // }
 
     return () => {
       if (autoCutRef.current) clearTimeout(autoCutRef.current);
@@ -187,6 +182,13 @@ useEffect(() => {
     return () => disconnectSocket();
   }, [currentUser?._id, initializeSocket, fetchConversations, disconnectSocket]);
 
+  useEffect(() => {
+  if (showSidebar && window.innerWidth < 768) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = 'unset';
+  }
+}, [showSidebar]);
 const handleAcceptCall = async () => {
   const { from, offer } = incomingCall;
   remoteUserRef.current = from;
@@ -250,6 +252,7 @@ const handleAcceptCall = async () => {
       clearMessages();
     }
     setSearchQuery("");
+    setShowSidebar(false);
   };
 
   const handleSend = () => {
@@ -312,10 +315,15 @@ const initiateVideoCall = async (targetUserId) => {
   socket.emit("call-user", { to: targetUserId, offer });
 };
   return (
-    <div className="flex flex-1 w-full h-full bg-[#11141B] border-l border-gray-800">
+    <div className="flex flex-1 w-full h-full bg-[#11141B] border-l border-gray-800 relative">
       
       {/* Sidebar */}
-      <div className="w-[320px] flex-shrink-0 border-r border-gray-800 flex flex-col bg-[#0B0E14]">
+      <div className={`
+      ${selectedConversation ? "hidden md:flex" : "flex"} 
+      w-full md:w-[320px] lg:w-[380px] 
+      h-full bg-[#0B0E14] border-r border-gray-800 
+      flex-col flex-shrink-0
+    `}>
         <div className="p-4 border-b border-gray-800 relative">
           <div className="relative group">
             <input
@@ -453,7 +461,7 @@ const initiateVideoCall = async (targetUserId) => {
               playsInline 
               muted 
               ref={el => { if(el) el.srcObject = localStream }} 
-              className="absolute bottom-4 right-4 w-48 rounded-lg border-2 border-green-500"
+              className="absolute bottom-4 right-4 w-28 sm:w-40 md:w-48 rounded-lg border-2 border-green-500"
             />
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
               <button onClick={handleEndCall} className="bg-red-600 p-4 rounded-full text-white hover:bg-red-700 transition-all">
@@ -468,12 +476,23 @@ const initiateVideoCall = async (targetUserId) => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-black relative">
+      <div className={`
+      ${!selectedConversation ? "hidden md:flex" : "flex"} 
+      flex-1 flex-col bg-black relative h-full
+    `}>
         {selectedConversation ? (
           <>
             {/* Header */}
            <div className="w-full p-4 border-b border-gray-800 bg-[#0B0E14] flex items-center justify-between">
               <div className="flex items-center gap-3">
+                <button
+                onClick={() => setSelectedConversation(null)}
+                className="md:hidden p-2 -ml-2 rounded-lg hover:bg-gray-800 text-gray-400"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
               <div className="relative">
                 {otherUser?.image ? (<>
                   <img
@@ -532,7 +551,7 @@ const initiateVideoCall = async (targetUserId) => {
                 if (!msg) return null;
                 const isMe = msg.senderId === currentUser?._id;
                 return (
-                  <div key={msg._id || idx} className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm shadow-sm ${
+                  <div key={msg._id || idx} className={`max-w-[85%] sm:max-w-[70%] md:max-w-[60%] px-4 py-2 rounded-2xl text-sm shadow-sm ${
                       isMe ? "ml-auto bg-green-600 text-white rounded-tr-none" : "mr-auto bg-gray-800 text-gray-100 rounded-tl-none border border-gray-700"
                     }`}>
                     <p className="leading-relaxed">{msg.text}</p>
@@ -551,7 +570,7 @@ const initiateVideoCall = async (targetUserId) => {
 
             {/* Message Input */}
             <div className="p-4 bg-[#0B0E14] border-t border-gray-800">
-              <div className="max-w-4xl mx-auto flex gap-2">
+              <div className="w-full max-w-4xl mx-auto flex gap-2">
                 <input
                   type="text"
                   placeholder="Type your message..."
@@ -567,12 +586,12 @@ const initiateVideoCall = async (targetUserId) => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex bg-[#0B0E14] flex-col items-center justify-center text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <p className="text-sm tracking-wide">Select a conversation to start chatting</p>
-          </div>
+          <div className="hidden md:flex flex-1 flex-col items-center justify-center text-gray-500">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          <p className="text-sm">Select a conversation to start chatting</p>
+        </div>
         )}
       </div>
     </div>

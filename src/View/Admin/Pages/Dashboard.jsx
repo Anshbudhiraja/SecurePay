@@ -22,11 +22,11 @@ const Dashboard = () => {
       {!isProfileComplete ? (
         <ProfileDetails />
       ) : (
-      <div className="flex">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
-        <div className="flex-1 p-7 overflow-auto">
-          <DashboardComp />
-        </div>
+        <main className="flex-1 p-7 overflow-y-auto bg-black"> {/* Changed to main for SEO/A11y */}
+        <DashboardComp />
+      </main>
       </div>
       )}
     </div>

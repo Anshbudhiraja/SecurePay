@@ -22,25 +22,25 @@ const RecieveComp = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto w-full px-1 sm:px-2">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
         <ArrowLeftIcon onClick={()=>navigate("/transfer")} className="w-5 h-5 cursor-pointer" />
         Recieve Money
         </h1>
-        <p className="text-gray-400">
+        <p className="text-gray-400 text-sm sm:text-base">
           Share your UPI QR or generate payment request
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Static Profile QR */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col items-center">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-6 flex flex-col items-center">
           <h2 className="text-lg font-semibold mb-6 text-white">Your Personal QR</h2>
           <div className="bg-white p-3 rounded-2xl shadow-xl">
             {user?.upiQr ? (
-              <img src={user.upiQr} alt="My QR" className="w-48 h-48" />
+              <img src={user.upiQr} alt="My QR" className="w-36 h-36 sm:w-48 sm:h-48" />
             ) : (
-              <div className="w-48 h-48 flex items-center justify-center text-zinc-400 italic text-xs">Generating...</div>
+              <div className="w-36 h-36 sm:w-48 sm:h-48 flex items-center justify-center text-zinc-400 italic text-xs">Generating...</div>
             )}
           </div>
           <p className="mt-6 text-xs text-zinc-500 uppercase tracking-widest">UPI ID</p>
@@ -53,10 +53,10 @@ const RecieveComp = () => {
           <div className="mb-6">
             <label className="text-xs text-zinc-500 uppercase mb-2 block">Amount to Receive</label>
             <input type="number" placeholder="₹ 0.00" value={amount} onChange={(e) => setAmount(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-xl outline-none focus:border-green-500" />
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-lg sm:text-xl text-white outline-none focus:border-green-500" />
           </div>
           <button disabled={!amount || isLoading} onClick={handleGenerate}
-            className="w-full py-3 rounded-xl font-bold bg-green-600 hover:bg-green-500 disabled:bg-zinc-800 transition-all">
+            className="w-full py-3 rounded-xl font-bold bg-green-600 hover:bg-green-500 disabled:bg-zinc-800 transition-all text-sm sm:text-base">
             {isLoading ? "Generating..." : "Generate Amount QR"}
           </button>
         </div>
@@ -65,15 +65,15 @@ const RecieveComp = () => {
       {/* QR Modal */}
       {requestedQr && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 w-full max-w-sm text-center shadow-2xl">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 sm:p-8 w-full max-w-sm text-center shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-1">Receive ₹{requestedQr.amount}</h2>
             <p className="text-zinc-500 text-sm mb-6">Scan to pay {requestedQr.payeeName}</p>
             
             <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mb-6">
-              <img src={requestedQr.qrCode} alt="Request QR" className="w-56 h-56" />
+              <img src={requestedQr.qrCode} alt="Request QR" className="w-40 h-40 sm:w-56 sm:h-56" />
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <button onClick={() => {
                 const link = document.createElement('a');
                 link.href = requestedQr.qrCode;

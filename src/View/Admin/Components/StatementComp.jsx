@@ -39,18 +39,18 @@ const StatementComp = () => {
   return (
     <div className="max-w-6xl mx-auto p-4 print:p-0">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Account Statements</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Account Statements</h1>
           <p className="text-zinc-400 mt-1">Transaction history and financial reporting</p>
         </div>
 
-        <div className="flex gap-3 print:hidden">
-          <button onClick={handleDownloadCSV} className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl text-sm transition border border-zinc-700">
+        <div className="flex flex-wrap gap-3 print:hidden">
+          <button onClick={handleDownloadCSV} className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl text-sm transition border border-zinc-700 w-full sm:w-auto">
             <TableCellsIcon className="w-4 h-4 text-green-500" /> 
             <span>Export Excel</span>
           </button>
-          <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl text-sm transition border border-zinc-700">
+          <button onClick={handleDownloadPDF} className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl text-sm transition border border-zinc-700 w-full sm:w-auto">
             <DocumentArrowDownIcon className="w-4 h-4 text-red-500" /> 
             <span>Export PDF</span>
           </button>
@@ -58,7 +58,7 @@ const StatementComp = () => {
       </div>
 
       {/* Advanced Filters */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-8 grid grid-cols-1 md:grid-cols-5 gap-4 print:hidden items-end">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 print:hidden items-end">
         <div className="md:col-span-1">
           <label className="text-[10px] uppercase text-zinc-500 font-bold mb-1.5 block">Status</label>
           <select 
@@ -103,7 +103,7 @@ const StatementComp = () => {
           </div>
         ) : statements.length > 0 ? (
           statements.map((item) => (
-            <div key={item._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex justify-between items-center hover:border-zinc-600 transition shadow-sm group">
+            <div key={item._id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 hover:border-zinc-600 transition shadow-sm group">
               <div className="flex gap-4 items-center">
                 <div className={`w-1.5 h-12 rounded-full transition-colors ${item.amount > 0 ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]'}`}></div>
                 <div>
@@ -117,7 +117,7 @@ const StatementComp = () => {
                 </div>
               </div>
 
-              <div className="text-right">
+              <div className="sm:text-right">
                 <p className={`text-xl font-bold ${item.amount > 0 ? "text-green-400" : "text-red-400"}`}>
                   {item.amount > 0 ? "+" : "-"} ₹{Math.abs(item.amount).toLocaleString('en-IN')}
                 </p>
@@ -138,7 +138,7 @@ const StatementComp = () => {
 
       {/* Pagination Bar */}
       {!isLoading && pagination.totalPages > 1 && (
-        <div className="flex justify-center items-center gap-10 mt-12 print:hidden">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mt-12 print:hidden">
           <button 
             onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
             disabled={currentPage === 1}
@@ -147,7 +147,7 @@ const StatementComp = () => {
             ← Previous
           </button>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {[...Array(pagination.totalPages)].map((_, i) => (
               <button 
                 key={i} 

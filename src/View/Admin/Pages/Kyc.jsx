@@ -9,7 +9,7 @@ const Kyc = () => {
       <Sidebar />
 
       {/* Main content */}
-      <div className="flex-1 p-7 overflow-auto">
+      <div className="flex-1 p-3 sm:p-5 md:p-7 overflow-x-hidden">
         <KycComp />
       </div>
     </div>

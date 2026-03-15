@@ -65,26 +65,26 @@ const BankComp = () => {
   if (isLoading) return <div className="bg-black h-screen flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto w-full px-1 sm:px-2 overflow-x-hidden">
       {/* Header */}
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-white">Bank Accounts</h1>
-          <p className="text-zinc-400">Manage your linked accounts for settlements</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Bank Accounts</h1>
+          <p className="text-zinc-400 text-sm sm:text-base">Manage your linked accounts for settlements</p>
         </div>
 
         <button
           onClick={() => setHideAllBalances(!hideAllBalances)}
-          className="flex items-center gap-2 text-sm bg-zinc-800 px-4 py-2 rounded-lg text-white"
+          className="flex items-center justify-center gap-2 text-xs sm:text-sm bg-zinc-800 px-3 sm:px-4 py-2 rounded-lg text-white w-full sm:w-auto"
         >
           {hideAllBalances ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
           {hideAllBalances ? "Balances Hidden" : "Show Balances"}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-8">
         {/* ================= Add Bank ================= */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 relative">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 sm:p-6 relative">
           {!user?.kyc_verified && (
             <div className="absolute inset-0 bg-black/80 rounded-xl flex items-center justify-center z-10 backdrop-blur-sm">
               <div className="text-center p-6">
@@ -105,10 +105,10 @@ const BankComp = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search bank name or branch..."
-              className="w-full pl-9 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base text-white"
             />
             {search && providers.length > 0 && !selectedProvider && (
-              <div className="absolute w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg z-20 shadow-2xl max-h-48 overflow-y-auto">
+              <div className="absolute left-0 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg z-20 shadow-2xl max-h-48 overflow-y-auto">
                 {providers.map((p) => (
                   <div
                     key={p._id}
@@ -132,19 +132,19 @@ const BankComp = () => {
               placeholder="Account Holder Name"
               value={form.holderName}
               onChange={(e) => setForm({ ...form, holderName: e.target.value })}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base text-white"
             />
             <input
               placeholder="Full Account Number"
               value={form.accountNo}
               onChange={(e) => setForm({ ...form, accountNo: e.target.value })}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base text-white"
             />
             <input
               placeholder="IFSC Code"
               value={form.ifscCode}
               readOnly
-              className="w-full bg-zinc-700/50 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-400 cursor-not-allowed"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base text-white"
             />
           </div>
 
@@ -168,8 +168,8 @@ const BankComp = () => {
           ) : (
             <div className="space-y-4">
               {accounts.map((acc) => (
-                <div key={acc._id} className="bg-zinc-800 border border-zinc-700 rounded-xl p-4">
-                  <div className="flex justify-between items-start">
+                <div key={acc._id} className="bg-zinc-800 border border-zinc-700 rounded-xl p-3 sm:p-4">
+                  <div className="flex justify-between items-start gap-2">
                     <div>
                       <p className="font-bold text-white">{acc.bankId?.bankname || "Unknown Bank"}</p>
                       <p className="text-xs text-zinc-400 font-mono mt-1">

@@ -9,7 +9,7 @@ const Transfer = () => {
       <Sidebar />
 
       {/* Main content */}
-      <div className="flex-1 p-7 overflow-auto">
+      <div className="max-w-6xl mx-auto w-full px-1 sm:px-2">
         <TransferComp />
         
       </div>

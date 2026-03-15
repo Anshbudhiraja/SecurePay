@@ -35,7 +35,7 @@ export default function Sidebar() {
 
   return (
     <div
-      className={`bg-gray-900 text-gray-100 h-screen p-5 pt-8 relative duration-300 flex flex-col ${
+      className={`bg-gray-900 text-gray-100 h-screen p-5 pt-8 relative transform-gpu transition-all duration-300 flex flex-col ${
         isOpen ? "w-64" : "w-20"
       }`}
     >

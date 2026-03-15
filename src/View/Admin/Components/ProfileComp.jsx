@@ -110,11 +110,11 @@ const ProfileComp = () => {
   };
   if (checkingAuth) return <div className="bg-black h-screen flex items-center justify-center">Loading...</div>;
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="flex flex-col xl:flex-row gap-8">
+    <div className="max-w-6xl mx-auto px-2 sm:px-4">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         
         {/* ================= Personal Details ================= */}
-        <div className="w-full xl:w-[60%] bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <div className="w-full lg:w-[60%] bg-zinc-900 border border-zinc-800 rounded-xl p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-white">Personal Details</h2>
             <button 
@@ -125,11 +125,11 @@ const ProfileComp = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8">
             <img
               src={user?.image || (user?.firstName ? "https://ui-avatars.com/api/?name=" + user?.firstName : "profile.png")}
               alt="Profile"
-              className="w-28 h-28 rounded-full object-cover border-4 border-zinc-800"
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-zinc-800"
             />
             <div>
               <label className="cursor-pointer inline-block bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-lg text-sm text-white">
@@ -140,7 +140,7 @@ const ProfileComp = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {Object.keys(formData).map((key) => (
               <div key={key}>
                 <label className="text-sm text-zinc-500 mb-1 block capitalize">
@@ -163,11 +163,11 @@ const ProfileComp = () => {
           </div>
 
           {isEditing && (
-            <div className="flex justify-end mt-8">
+            <div className="flex flex-col sm:flex-row sm:justify-end mt-8">
               <button 
                 onClick={handleSaveDetails}
                 disabled={isLoading}
-                className="px-8 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium disabled:bg-zinc-700"
+                className="w-full sm:w-auto px-8 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium disabled:bg-zinc-700"
               >
                 {isLoading ? "Saving..." : "Save Changes"}
               </button>
@@ -176,7 +176,7 @@ const ProfileComp = () => {
         </div>
 
         {/* ================= Payment & KYC ================= */}
-        <div className="w-full xl:w-[40%] bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <div className="w-full lg:w-[40%] bg-zinc-900 border border-zinc-800 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-6 text-white">Verification & UPI</h2>
 
           <div className="space-y-6">
@@ -194,7 +194,7 @@ const ProfileComp = () => {
               <p className="text-sm text-zinc-500 mb-3 self-start">My UPI QR Code</p>
               {user?.upiQr ? (
                 <>
-                  <img src={user.upiQr} alt="UPI QR" className="w-48 h-48 rounded-lg bg-white p-2" />
+                  <img src={user.upiQr} alt="UPI QR" className="w-40 h-40 sm:w-48 sm:h-48 rounded-lg bg-white p-2" />
                   <a 
                     href={user.upiQr} 
                     download="my-upi-qr.png"
@@ -216,11 +216,11 @@ const ProfileComp = () => {
                 <p className="text-sm text-zinc-500">Linked UPI ID</p>
                 <button onClick={handleGenerateUpi} className="text-[10px] text-blue-400 uppercase tracking-widest">Update</button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-300">
                   {user?.upiId || "Not Linked"}
                 </div>
-                <button onClick={copyUpi} className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700">
+                <button onClick={copyUpi} className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 sm:self-auto self-end">
                   {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <ClipboardIcon className="w-5 h-5 text-zinc-400" />}
                 </button>
               </div>
